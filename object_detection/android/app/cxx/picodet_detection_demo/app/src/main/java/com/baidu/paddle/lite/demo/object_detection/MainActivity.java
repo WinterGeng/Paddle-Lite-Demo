@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.*;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -18,7 +19,6 @@ import android.widget.*;
 
 import com.baidu.paddle.lite.demo.common.CameraSurfaceView;
 import com.baidu.paddle.lite.demo.common.Utils;
-import com.baidu.paddle.lite.demo.object_detection.R;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -38,6 +38,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Came
     long lastFrameTime;
 
     Native predictor = new Native();
+
+    private TextView actionTakePictureTv;
+    private TextView actionRealtimeTv;
+    private ImageView takePictureButton;
+    private ImageView albumSelectButton;
+    private ImageView realtimeToggleButton;
+    boolean isRealtimeStatusRunning = false;
+    protected boolean canAutoRun = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +67,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Came
         if (!checkAllPermissions()) {
             requestAllPermissions();
         }
+        canAutoRun = true;
     }
 
     @Override
@@ -130,6 +139,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Came
             predictor.release();
         }
         super.onDestroy();
+        isRealtimeStatusRunning = false;
     }
 
     public void initView() {
@@ -142,6 +152,112 @@ public class MainActivity extends Activity implements View.OnClickListener, Came
         btnShutter.setOnClickListener(this);
         btnSettings = (ImageButton) findViewById(R.id.btn_settings);
         btnSettings.setOnClickListener(this);
+        actionTakePictureTv = findViewById(R.id.action_takepicture_btn);
+        actionRealtimeTv = findViewById(R.id.action_realtime_btn);
+        actionTakePictureTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setActionBtnHighlight(actionTakePictureTv);
+                setActionBtnDefault(actionRealtimeTv);
+                toggleOperationBtns(true);
+            }
+        });
+        actionRealtimeTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setActionBtnHighlight(actionRealtimeTv);
+                setActionBtnDefault(actionTakePictureTv);
+                toggleOperationBtns(false);
+                toggleRealtimeStyle();
+            }
+        });
+        takePictureButton = findViewById(R.id.btn_shutter);
+        albumSelectButton = findViewById(R.id.albumSelect);
+        setTakePictureButtonAvailable(true);
+        realtimeToggleButton = findViewById(R.id.realtime_toggle_btn);
+        takePictureButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // TODO: 2022/10/15
+
+            }
+        });
+        albumSelectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // TODO: 2022/10/15  
+            }
+        });
+        realtimeToggleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // TODO: 2022/10/15
+                toggleRealtimeStyle();
+            }
+        });
+    }
+
+    /**
+     * 切换扫描或者拍照模式
+     *
+     * @param isTakePicture
+     */
+    private void toggleOperationBtns(boolean isTakePicture) {
+        if (isTakePicture) {
+            takePictureButton.setVisibility(View.VISIBLE);
+            albumSelectButton.setVisibility(View.VISIBLE);
+            realtimeToggleButton.setVisibility(View.GONE);
+        } else {
+            takePictureButton.setVisibility(View.INVISIBLE);
+            albumSelectButton.setVisibility(View.GONE);
+            realtimeToggleButton.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void toggleRealtimeStatus() {
+        if (canAutoRun || isRealtimeStatusRunning) {
+            isRealtimeStatusRunning = !isRealtimeStatusRunning;
+            toggleRealtimeStyle();
+        }
+    }
+
+    private void toggleRealtimeStyle() {
+        if (isRealtimeStatusRunning) {
+            isRealtimeStatusRunning = false;
+            realtimeToggleButton.setImageResource(R.drawable.realtime_stop_btn);
+        } else {
+            isRealtimeStatusRunning = true;
+            realtimeToggleButton.setImageResource(R.drawable.realtime_start_btn);
+        }
+    }
+
+    protected void setTakePictureButtonAvailable(boolean available) {
+        if (takePictureButton == null) {
+            return;
+        }
+        if (available) {
+            takePictureButton.setColorFilter(null);
+        } else {
+            takePictureButton.setColorFilter(Color.GRAY);
+        }
+    }
+
+
+    private void setActionBtnHighlight(TextView btn) {
+        btn.setBackgroundResource(com.baidu.ai.edge.ui.R.color.bk_black);
+        ColorStateList color = getResources().getColorStateList(com.baidu.ai.edge.ui.R.color.textColorHighlight);
+        btn.setTextColor(color);
+    }
+
+    private void setActionBtnDefault(TextView btn) {
+        btn.setBackgroundResource(com.baidu.ai.edge.ui.R.color.bk_black);
+        ColorStateList color = getResources().getColorStateList(com.baidu.ai.edge.ui.R.color.textColor);
+        btn.setTextColor(color);
+    }
+
+    @Override
+    public void onBackPressed() {
+        isRealtimeStatusRunning = false;
     }
 
     public void initSettings() {
